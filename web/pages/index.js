@@ -70,9 +70,7 @@ export default function Home() {
                     <div className="metric-value">5</div>
                   </div>
                 </div>
-                <div className="quote">
-                  “We may share personal data with third‑party partners for marketing and analytics…”
-                </div>
+                <div className="quote"></div>
               </div>
               <div className="visual-stack">
                 <div className="stack-card">
