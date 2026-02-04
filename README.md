@@ -28,8 +28,5 @@ ClearTerms AI is a real-time legal risk translator for Terms of Service and Priv
 - Evidence quotes are taken verbatim from the policy text.
 - Your API key is stored locally in chrome.storage.local.
 
-## Need Help?
-Open an issue on GitHub and we will help you get set up.
-
 ---
 (c) 2026 ClearTerms AI
