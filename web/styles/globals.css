@@ -6,7 +6,7 @@
   --accent-2: #e0a75e;
   --accent-3: #2f7a6d;
   --line: rgba(16, 17, 20, 0.12);
-  --card: rgba(255, 255, 255, 0.86);
+  --card: rgba(255, 255, 255, 0.9);
   --glass: rgba(255, 255, 255, 0.76);
 }
 
@@ -77,11 +77,9 @@ h1, h2, h3 {
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   font-weight: 700;
   font-size: 18px;
+  letter-spacing: 0.4px;
 }
 
 .nav-links {
@@ -333,13 +331,15 @@ p {
   color: var(--accent-3);
 }
 
-.install-steps {
+.install-steps,
+.use-case-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
-.install-card {
+.install-card,
+.use-case {
   padding: 18px;
   border-radius: 18px;
   background: var(--glass);
@@ -383,7 +383,8 @@ p {
 
   .bento,
   .install-steps,
-  .visual-grid {
+  .visual-grid,
+  .use-case-grid {
     grid-template-columns: 1fr;
   }
 
