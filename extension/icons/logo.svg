@@ -1,0 +1,19 @@
+﻿<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ct-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9F63FF"/>
+      <stop offset="0.5" stop-color="#6C4BF4"/>
+      <stop offset="1" stop-color="#2F7A6D"/>
+    </linearGradient>
+    <radialGradient id="ct-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(140 120) rotate(45) scale(260)">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#ct-gradient)"/>
+  <rect x="40" y="40" width="432" height="432" rx="88" stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#ct-glow)"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle"
+        font-family="Space Grotesk, Manrope, Segoe UI, sans-serif"
+        font-size="180" font-weight="700" letter-spacing="8" fill="#F8F7FF">CT</text>
+</svg>

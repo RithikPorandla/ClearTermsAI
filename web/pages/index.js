@@ -11,130 +11,151 @@ export default function Home() {
         />
       </Head>
       <main className="page">
-        <section className="hero-surface">
+        <section className="hero">
           <nav className="nav">
             <div className="logo">
-              <span className="logo-mark">CT</span>
+              <img src="/logo.svg" alt="ClearTerms AI" />
               <span>ClearTerms AI</span>
             </div>
             <div className="nav-links">
-              <a href="#solutions">Solutions</a>
-              <a href="#benefits">Benefits</a>
+              <a href="#features">Features</a>
+              <a href="#how">How It Works</a>
               <a href="#install">Install</a>
               <a className="button small" href="#install">Install Extension</a>
             </div>
           </nav>
 
-          <div className="hero">
-            <span className="pill">New</span>
-            <h1>
-              Intelligent policy clarity for the modern internet.
-            </h1>
-            <p>
-              ClearTerms AI detects Terms of Service and Privacy Policy pages, extracts the key clauses,
-              and delivers evidence‑first risk insights before you click “Accept.”
-            </p>
-            <div className="cta-row">
-              <a className="button primary" href="#install">Install Extension</a>
-              <a
-                className="button ghost"
-                href="https://github.com/RithikPorandla/ClearTermsAI"
-                target="_blank"
-                rel="noreferrer"
-              >
-                View on GitHub
-              </a>
+          <div className="hero-grid">
+            <div className="hero-copy">
+              <span className="pill">Policy Intelligence</span>
+              <h1>
+                Make every policy decision with clarity, not guesswork.
+              </h1>
+              <p>
+                ClearTerms AI detects Terms of Service and Privacy Policy pages, extracts the clauses that
+                matter, and delivers evidence‑first insights before you click “Accept.”
+              </p>
+              <div className="cta-row">
+                <a className="button primary" href="#install">Install Extension</a>
+                <a
+                  className="button ghost"
+                  href="https://github.com/RithikPorandla/ClearTermsAI"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View on GitHub
+                </a>
+              </div>
+              <div className="trust-row">
+                <span>Evidence‑first</span>
+                <span>Local‑first</span>
+                <span>No legal advice</span>
+              </div>
             </div>
-            <div className="trust">
-              Evidence‑first · Local‑first · No legal advice
-            </div>
-            <div className="logo-row">
-              <span>Legal Teams</span>
-              <span>Founders</span>
-              <span>Students</span>
-              <span>Privacy‑First</span>
+            <div className="hero-visual">
+              <div className="visual-card">
+                <div className="visual-header">
+                  <div>
+                    <div className="visual-title">Policy Snapshot</div>
+                    <div className="visual-sub">stripe.com/privacy</div>
+                  </div>
+                  <div className="risk-badge">78 • High</div>
+                </div>
+                <div className="visual-grid">
+                  <div className="metric">
+                    <div className="metric-label">Risk Index</div>
+                    <div className="metric-value">78</div>
+                  </div>
+                  <div className="metric">
+                    <div className="metric-label">Red Flags</div>
+                    <div className="metric-value">4</div>
+                  </div>
+                  <div className="metric">
+                    <div className="metric-label">Data Rights</div>
+                    <div className="metric-value">5</div>
+                  </div>
+                </div>
+                <div className="quote">
+                  “We use and share personal data with advertising partners...”
+                </div>
+              </div>
+              <div className="visual-stack">
+                <div className="stack-card">
+                  <h3>Red Flags</h3>
+                  <p>Arbitration, AI training, data sharing.</p>
+                </div>
+                <div className="stack-card">
+                  <h3>Escape Plan</h3>
+                  <p>Opt‑out + deletion steps extracted.</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="section" id="solutions">
+        <section className="section" id="features">
           <div className="section-head">
-            <span className="pill">Our Services</span>
-            <h2>Risk insights that feel premium and human.</h2>
+            <span className="pill">Why ClearTerms AI</span>
+            <h2>Premium clarity at the moment of consent.</h2>
             <p>
-              We surface the clauses that matter most, attach direct evidence quotes, and explain the impact
-              in plain English so you can decide fast.
+              Built for speed, evidence, and trust. Every insight is backed by verbatim quotes so you can
+              decide quickly and confidently.
             </p>
           </div>
           <div className="bento">
-            <div className="bento-card">
-              <div className="bento-title">Policy Scanner</div>
-              <p>
-                Detects Terms & Privacy pages using URL, title, and content signals — no manual copy/paste.
-              </p>
-              <div className="chips">
-                <span>URL signals</span>
-                <span>Heading cues</span>
-                <span>Body scan</span>
-              </div>
-            </div>
-            <div className="bento-card highlight">
-              <div className="bento-title">Evidence‑First Red Flags</div>
-              <p>
-                Every risk claim includes verbatim quotes so you know exactly what the policy says.
-              </p>
-              <div className="mock">
-                <div className="mock-line"></div>
-                <div className="mock-line"></div>
-                <div className="mock-line short"></div>
-              </div>
-            </div>
-            <div className="bento-card">
-              <div className="bento-title">Actionable Escape Plan</div>
-              <p>
-                Find opt‑out, cancellation, and deletion steps in seconds.
-              </p>
-              <div className="chips">
-                <span>Opt‑out</span>
-                <span>Delete</span>
-                <span>Contact</span>
-              </div>
-            </div>
+            <article className="bento-card">
+              <h3>Evidence‑first red flags</h3>
+              <p>Every risk claim includes exact policy quotes so you always see the source.</p>
+            </article>
+            <article className="bento-card feature">
+              <h3>Instant risk score</h3>
+              <p>Rule‑based scoring turns legal complexity into a clear signal.</p>
+            </article>
+            <article className="bento-card">
+              <h3>Actionable rights</h3>
+              <p>We surface deletion, opt‑out, and portability steps in plain English.</p>
+            </article>
+            <article className="bento-card">
+              <h3>Local‑first privacy</h3>
+              <p>Your API key and results stay on device by default.</p>
+            </article>
+            <article className="bento-card feature">
+              <h3>Fast detection</h3>
+              <p>Smart URL, title, and content signals identify policy pages instantly.</p>
+            </article>
+            <article className="bento-card">
+              <h3>Designed for trust</h3>
+              <p>Luxury UI with clarity‑first layout and measured language.</p>
+            </article>
           </div>
         </section>
 
-        <section className="section" id="benefits">
+        <section className="section" id="how">
           <div className="section-head">
-            <span className="pill">Benefits</span>
-            <h2>Premium clarity at the moment of consent.</h2>
-            <p>
-              Built for speed, evidence, and trust — so every decision is informed.
-            </p>
+            <span className="pill">How It Works</span>
+            <h2>From policy page to clear decision in minutes.</h2>
           </div>
-          <div className="cards">
-            <div className="card">
-              <h3>Faster decisions</h3>
-              <p>Scan and understand policies in minutes, not hours.</p>
+          <div className="timeline">
+            <div className="step">
+              <div className="step-index">1</div>
+              <div>
+                <h3>Detect</h3>
+                <p>ClearTerms AI identifies policy pages using URL, title, and body signals.</p>
+              </div>
             </div>
-            <div className="card">
-              <h3>Evidence you can audit</h3>
-              <p>Quotes are lifted verbatim so you always see the source.</p>
+            <div className="step">
+              <div className="step-index">2</div>
+              <div>
+                <h3>Analyze</h3>
+                <p>Gemini analyzes the policy and returns structured, evidence‑based insights.</p>
+              </div>
             </div>
-            <div className="card">
-              <h3>Risk‑aware scoring</h3>
-              <p>Rule‑based risk index with clear severity labels.</p>
-            </div>
-            <div className="card">
-              <h3>Local‑first privacy</h3>
-              <p>Your analysis stays on device by default.</p>
-            </div>
-            <div className="card">
-              <h3>Actionable rights</h3>
-              <p>Find deletion, opt‑out, and portability steps fast.</p>
-            </div>
-            <div className="card">
-              <h3>Designed to feel premium</h3>
-              <p>Luxury UI with clarity-first layout and flow.</p>
+            <div className="step">
+              <div className="step-index">3</div>
+              <div>
+                <h3>Decide</h3>
+                <p>Review the risk score, red flags, and escape steps before you accept.</p>
+              </div>
             </div>
           </div>
         </section>
@@ -145,31 +166,27 @@ export default function Home() {
             <h2>Install the extension in minutes.</h2>
             <p>Download the repo, load the extension locally, and start analyzing policies right away.</p>
           </div>
-          <div className="steps">
-            <div className="step">
-              <div className="step-number">1</div>
-              <div>
-                <h3>Download the repo</h3>
-                <p>Get the latest version from GitHub.</p>
-              </div>
+          <div className="install-steps">
+            <div className="install-card">
+              <div className="install-title">1. Download</div>
+              <p>Get the latest version from GitHub.</p>
             </div>
-            <div className="step">
-              <div className="step-number">2</div>
-              <div>
-                <h3>Enable Developer Mode</h3>
-                <p>Open <span className="mono">chrome://extensions</span> and enable Developer Mode.</p>
-              </div>
+            <div className="install-card">
+              <div className="install-title">2. Enable Dev Mode</div>
+              <p>Open <span className="mono">chrome://extensions</span> and enable Developer Mode.</p>
             </div>
-            <div className="step">
-              <div className="step-number">3</div>
-              <div>
-                <h3>Load the extension</h3>
-                <p>Click <strong>Load unpacked</strong> and select the <span className="mono">extension/</span> folder.</p>
-              </div>
+            <div className="install-card">
+              <div className="install-title">3. Load Extension</div>
+              <p>Click <strong>Load unpacked</strong> and select the <span className="mono">extension/</span> folder.</p>
             </div>
           </div>
           <div className="cta-row">
-            <a className="button primary" href="https://github.com/RithikPorandla/ClearTermsAI" target="_blank" rel="noreferrer">
+            <a
+              className="button primary"
+              href="https://github.com/RithikPorandla/ClearTermsAI"
+              target="_blank"
+              rel="noreferrer"
+            >
               Download from GitHub
             </a>
           </div>
