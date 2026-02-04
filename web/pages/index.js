@@ -13,10 +13,7 @@ export default function Home() {
       <main className="page">
         <section className="hero">
           <nav className="nav">
-            <div className="logo">
-              <img src="/logo.svg" alt="ClearTerms AI" />
-              <span>ClearTerms AI</span>
-            </div>
+            <div className="logo">ClearTerms AI</div>
             <div className="nav-links">
               <a href="#features">Features</a>
               <a href="#how">How It Works</a>
@@ -33,7 +30,7 @@ export default function Home() {
               </h1>
               <p>
                 ClearTerms AI detects Terms of Service and Privacy Policy pages, extracts the clauses that
-                matter, and delivers evidence‑first insights before you click “Accept.”
+                matter, and delivers evidence-first insights before you click “Accept.”
               </p>
               <div className="cta-row">
                 <a className="button primary" href="#install">Install Extension</a>
@@ -47,8 +44,8 @@ export default function Home() {
                 </a>
               </div>
               <div className="trust-row">
-                <span>Evidence‑first</span>
-                <span>Local‑first</span>
+                <span>Evidence-first</span>
+                <span>Local-first</span>
                 <span>No legal advice</span>
               </div>
             </div>
@@ -86,7 +83,7 @@ export default function Home() {
                 </div>
                 <div className="stack-card">
                   <h3>Escape Plan</h3>
-                  <p>Opt‑out + deletion steps extracted.</p>
+                  <p>Opt-out + deletion steps extracted.</p>
                 </div>
               </div>
             </div>
@@ -104,19 +101,19 @@ export default function Home() {
           </div>
           <div className="bento">
             <article className="bento-card">
-              <h3>Evidence‑first red flags</h3>
+              <h3>Evidence-first red flags</h3>
               <p>Every risk claim includes exact policy quotes so you always see the source.</p>
             </article>
             <article className="bento-card feature">
               <h3>Instant risk score</h3>
-              <p>Rule‑based scoring turns legal complexity into a clear signal.</p>
+              <p>Rule-based scoring turns legal complexity into a clear signal.</p>
             </article>
             <article className="bento-card">
               <h3>Actionable rights</h3>
-              <p>We surface deletion, opt‑out, and portability steps in plain English.</p>
+              <p>We surface deletion, opt-out, and portability steps in plain English.</p>
             </article>
             <article className="bento-card">
-              <h3>Local‑first privacy</h3>
+              <h3>Local-first privacy</h3>
               <p>Your API key and results stay on device by default.</p>
             </article>
             <article className="bento-card feature">
@@ -125,7 +122,7 @@ export default function Home() {
             </article>
             <article className="bento-card">
               <h3>Designed for trust</h3>
-              <p>Luxury UI with clarity‑first layout and measured language.</p>
+              <p>Luxury UI with clarity-first layout and measured language.</p>
             </article>
           </div>
         </section>
@@ -147,7 +144,7 @@ export default function Home() {
               <div className="step-index">2</div>
               <div>
                 <h3>Analyze</h3>
-                <p>Gemini analyzes the policy and returns structured, evidence‑based insights.</p>
+                <p>Gemini analyzes the policy and returns structured, evidence-based insights.</p>
               </div>
             </div>
             <div className="step">
