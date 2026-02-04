@@ -12,7 +12,7 @@ ClearTerms AI is a browser extension that detects Terms of Service and Privacy P
 ## Repository Structure
 - `extension/` — Chrome extension (popup + report UI, content script, background worker)
 - `server/` — Optional Express API (SaaS backend scaffold)
-- `web/` — Optional Next.js dashboard (SaaS web app scaffold)
+- `web/` — Marketing landing page (Next.js)
 
 > The extension currently uses **local Gemini mode** and does **not** call the `server/` API.
 
@@ -30,30 +30,20 @@ No backend is required. The extension calls Gemini directly from the background 
 - **Gemini API Key** is stored in `chrome.storage.local`
 - Only sent to Gemini when analysis is triggered
 
+## Web Landing Page (Vercel)
+Deploy the `web/` app to Vercel as your public landing page:
+
+1. Import the GitHub repo into Vercel
+2. Set **Root Directory** to `web`
+3. Framework preset: **Next.js**
+4. Deploy
+
 ## Optional SaaS Components (Not Active)
 If you later want the SaaS stack:
 - `server/` can be used as an API layer (Express + Supabase)
-- `web/` can be used as a user dashboard (Next.js + Auth0)
+- `web/` can be expanded into a dashboard (Next.js + Auth0)
 
 These are included for future expansion but are **not required** for local Gemini analysis.
-
-## Deployment (Vercel — Web App Only)
-If you want to deploy the `web/` dashboard:
-1. Create a new Vercel project and import this repo
-2. Set **Root Directory** to `web`
-3. Add Auth0 environment variables in Vercel
-4. (Optional) Set `NEXT_PUBLIC_API_BASE_URL` if you deploy the API later
-
-### Suggested Env Vars (`web/.env.local`)
-```
-NEXT_PUBLIC_API_BASE_URL=
-AUTH0_SECRET=
-AUTH0_BASE_URL=
-AUTH0_ISSUER_BASE_URL=
-AUTH0_CLIENT_ID=
-AUTH0_CLIENT_SECRET=
-AUTH0_AUDIENCE=
-```
 
 ## Security & Privacy
 - Local storage only for analysis results and API key
