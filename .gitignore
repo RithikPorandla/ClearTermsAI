@@ -1,0 +1,25 @@
+﻿# Node / JS
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Build outputs
+web/.next/
+web/out/
+server/dist/
+
+# Vercel
+.vercel/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/

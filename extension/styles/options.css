@@ -1,0 +1,88 @@
+:root {
+  --ink: #101114;
+  --muted: #5d636f;
+  --accent: #1e3a5f;
+  --line: rgba(16, 17, 20, 0.12);
+  --glass: rgba(255, 255, 255, 0.82);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Optima", "Candara", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(224, 167, 94, 0.25), transparent 45%),
+    radial-gradient(circle at 90% 0%, rgba(30, 58, 95, 0.2), transparent 40%),
+    linear-gradient(135deg, #f8f5f1 0%, #efe9e2 100%);
+}
+
+.settings {
+  max-width: 560px;
+  margin: 32px auto;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 26px rgba(16, 17, 20, 0.12);
+  display: grid;
+  gap: 14px;
+}
+
+h1 {
+  font-family: "Palatino Linotype", "Book Antiqua", serif;
+  margin: 0;
+}
+
+label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primary, .secondary {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary {
+  background: linear-gradient(140deg, var(--accent), #0f263c);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(16, 17, 20, 0.2);
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.note {
+  font-size: 12px;
+  color: #7a6f66;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}

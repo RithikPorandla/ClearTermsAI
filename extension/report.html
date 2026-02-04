@@ -1,0 +1,93 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClearTerms AI Report</title>
+  <link rel="stylesheet" href="styles/report.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">CT</div>
+      <div>
+        <div class="title">ClearTerms AI</div>
+        <div class="subtitle">Full Policy Intelligence Report</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div id="domain">Domain: --</div>
+      <div id="timestamp">Analyzed: --</div>
+      <div class="meta-pill">Evidence-first</div>
+    </div>
+  </header>
+
+  <main class="report">
+    <aside class="sidebar">
+      <div class="sidebar-title">Report Index</div>
+      <nav class="sidebar-nav">
+        <a href="#summary">Executive Summary</a>
+        <a href="#flags">Red Flags</a>
+        <a href="#rights">Your Data Rights</a>
+        <a href="#escape">Opt Out / Delete</a>
+        <a href="#disclaimers">Disclaimers</a>
+      </nav>
+      <button id="export-pdf" class="export">Export PDF</button>
+    </aside>
+
+    <section class="panel executive" id="summary">
+      <div class="score-wrap">
+        <div class="score-box" id="report-score">--</div>
+        <div>
+          <div class="label" id="report-level">Unclear</div>
+          <div class="score-caption">Risk Index</div>
+        </div>
+      </div>
+      <div class="summary-wrap">
+        <div class="section-kicker">Executive Summary</div>
+        <p id="report-gist" class="gist">We’ll show the policy summary here.</p>
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-title">Evidence</div>
+            <div class="summary-text">Direct quotes only. No speculation.</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Local-First</div>
+            <div class="summary-text">Results stored on your device.</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Actionable</div>
+            <div class="summary-text">Opt-out and deletion steps highlighted.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="flags">
+      <div class="section-title">Red Flags</div>
+      <div id="report-flags" class="cards"></div>
+    </section>
+
+    <section class="panel" id="rights">
+      <div class="section-title">Your Data Rights</div>
+      <div id="report-rights" class="cards"></div>
+    </section>
+
+    <section class="panel" id="escape">
+      <div class="section-title">How to Opt Out / Delete</div>
+      <div id="report-escape" class="cards"></div>
+    </section>
+
+    <section class="panel" id="disclaimers">
+      <div class="section-title">Disclaimers</div>
+      <ul id="report-disclaimers" class="list"></ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Informational only — not legal advice. Evidence quotes are taken from the provided policy text.
+  </footer>
+
+  <script src="scripts/report.js"></script>
+</body>
+</html>
