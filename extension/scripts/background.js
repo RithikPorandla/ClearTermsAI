@@ -182,6 +182,52 @@ const truncateText = (text) => {
   return text.slice(0, head) + "\n... [TRUNCATED] ...\n" + text.slice(-tail);
 };
 
+const stripCodeFences = (text) => {
+  if (!text) return "";
+  return text.replace(/^```[a-zA-Z]*\s*/m, "").replace(/```\s*$/m, "");
+};
+
+const findJsonObject = (text) => {
+  if (!text) return "";
+  const cleaned = stripCodeFences(text).trim();
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
+
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < cleaned.length; i += 1) {
+    const ch = cleaned[i];
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0 && start !== -1) {
+        return cleaned.slice(start, i + 1);
+      }
+    }
+  }
+  return "";
+};
+
+const tryParseJson = (text) => {
+  const candidate = findJsonObject(text);
+  if (!candidate) return null;
+
+  try {
+    return JSON.parse(candidate);
+  } catch (err) {
+    const sanitized = candidate
+      .replace(/\u0000/g, "")
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]");
+    try {
+      return JSON.parse(sanitized);
+    } catch (innerErr) {
+      return null;
+    }
+  }
+};
+
 const callGemini = async ({ url, title, text }) => {
   const keyResult = await chrome.storage.local.get("gemini_api_key");
   const apiKey = keyResult.gemini_api_key;
@@ -230,10 +276,8 @@ const callGemini = async ({ url, title, text }) => {
     return { error: "EMPTY_RESPONSE", message: "Gemini returned no output." };
   }
 
-  let analysis;
-  try {
-    analysis = JSON.parse(textOut);
-  } catch (err) {
+  let analysis = tryParseJson(textOut);
+  if (!analysis) {
     return { error: "PARSE_ERROR", message: "Unable to parse model output." };
   }
 
