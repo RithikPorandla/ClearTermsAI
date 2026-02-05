@@ -27,8 +27,12 @@ export default function Home() {
               <span className="pill">Real-Time Clarity</span>
               <h1>Know what you are accepting before you accept it.</h1>
               <p>
-                ClearTerms AI sits in your browser and translates legal policies into clear, evidence‑first
-                risk insights. It is built for the exact moment you are asked to click “Accept.”
+                ClearTerms AI is a browser extension that detects Terms of Service and Privacy Policy pages
+                in real time, extracts the policy text, and translates it into clear, evidence‑first risk
+                insights. Instead of skimming legal language, you see a concise executive summary, a
+                transparent risk score, and verbatim evidence quotes that explain why each red flag matters.
+                It is built for the exact moment you are asked to click “Accept,” so you can make informed
+                decisions quickly without guessing.
               </p>
               <div className="cta-row">
                 <a className="button primary" href="#install">Install Extension</a>
@@ -45,42 +49,6 @@ export default function Home() {
                 <span>Evidence-first</span>
                 <span>Local-first</span>
                 <span>No legal advice</span>
-              </div>
-            </div>
-            <div className="hero-visual">
-              <div className="visual-card">
-                <div className="visual-header">
-                  <div>
-                    <div className="visual-title">Risk Brief</div>
-                    <div className="visual-sub">Example policy page</div>
-                  </div>
-                  <div className="risk-badge">78 • High</div>
-                </div>
-                <div className="visual-grid">
-                  <div className="metric">
-                    <div className="metric-label">Risk Index</div>
-                    <div className="metric-value">78</div>
-                  </div>
-                  <div className="metric">
-                    <div className="metric-label">Red Flags</div>
-                    <div className="metric-value">4</div>
-                  </div>
-                  <div className="metric">
-                    <div className="metric-label">Data Rights</div>
-                    <div className="metric-value">5</div>
-                  </div>
-                </div>
-                <div className="quote"></div>
-              </div>
-              <div className="visual-stack">
-                <div className="stack-card">
-                  <h3>Red Flags</h3>
-                  <p>Arbitration, AI training, data sharing.</p>
-                </div>
-                <div className="stack-card">
-                  <h3>Escape Plan</h3>
-                  <p>Opt‑out + deletion steps extracted.</p>
-                </div>
               </div>
             </div>
           </div>
