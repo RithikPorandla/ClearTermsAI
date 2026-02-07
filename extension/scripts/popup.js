@@ -78,6 +78,8 @@ const requestAnalysis = async () => {
         setStatus("Add your Gemini API key in settings.");
       } else if (response.error === "GEMINI_ERROR") {
         setStatus("Gemini request failed. Check your key and quota.");
+      } else if (response.error === "PARSE_ERROR" && response.message === "EMPTY_ANALYSIS") {
+        setStatus("Analysis was inconclusive. Try again.");
       } else {
         setStatus(response.message || "Analysis failed.");
       }

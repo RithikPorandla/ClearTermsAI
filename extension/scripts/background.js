@@ -1,4 +1,5 @@
 const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+const ANALYSIS_VERSION = 2;
 const MAX_INPUT_CHARS = 12000;
 const OUTPUT_TOKENS = 700;
 
@@ -59,6 +60,15 @@ const hashText = (text) => {
     hash |= 0;
   }
   return Math.abs(hash).toString(16);
+};
+
+const isMeaningfulAnalysis = (analysis) => {
+  if (!analysis || typeof analysis !== "object") return false;
+  const gist = typeof analysis.The_Gist === "string" ? analysis.The_Gist.trim() : "";
+  const flags = Array.isArray(analysis.Red_Flags) ? analysis.Red_Flags : [];
+  const rights = Array.isArray(analysis.Data_Rights) ? analysis.Data_Rights : [];
+  const escape = Array.isArray(analysis.The_Escape) ? analysis.The_Escape : [];
+  return gist.length >= 20 || flags.length > 0 || rights.length > 0 || escape.length > 0;
 };
 
 const normalizeDetector = (detector) => {
@@ -535,6 +545,10 @@ const callGemini = async ({ url, title, text }) => {
     }
 
     const shaped = ensureAnalysisShape(analysis);
+    if (!isMeaningfulAnalysis(shaped)) {
+      lastError = "EMPTY_ANALYSIS";
+      continue;
+    }
     return { analysis: normalizeAnalysis(shaped) };
   }
 
@@ -542,11 +556,21 @@ const callGemini = async ({ url, title, text }) => {
 };
 
 const getCachedAnalysis = async ({ domain, textHash }) => {
-  const stored = await chrome.storage.local.get(`analysis:${domain}`);
-  const record = stored[`analysis:${domain}`];
-  if (record?.meta?.textHash === textHash) {
+  const key = `analysis:${domain}`;
+  const stored = await chrome.storage.local.get(key);
+  const record = stored[key];
+  const isSameText = record?.meta?.textHash === textHash;
+  const isCurrentVersion = record?.meta?.analysis_version === ANALYSIS_VERSION;
+  const isValid = isSameText && isCurrentVersion && isMeaningfulAnalysis(record?.analysis);
+
+  if (isValid) {
     return { analysis: record.analysis };
   }
+
+  if (record) {
+    await chrome.storage.local.remove(key);
+  }
+
   return { analysis: null };
 };
 
@@ -554,7 +578,10 @@ const saveAnalysis = async ({ domain, analysis, meta }) => {
   await chrome.storage.local.set({
     [`analysis:${domain}`]: {
       analysis,
-      meta
+      meta: {
+        ...meta,
+        analysis_version: ANALYSIS_VERSION
+      }
     }
   });
 };
