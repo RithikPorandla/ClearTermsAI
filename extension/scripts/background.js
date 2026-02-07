@@ -1,7 +1,7 @@
 const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"];
-const ANALYSIS_VERSION = 2;
+const ANALYSIS_VERSION = 3;
 const MAX_INPUT_CHARS = 12000;
-const OUTPUT_TOKENS = 700;
+const OUTPUT_TOKENS = 1200;
 
 const RISK_RULES = {
   forced_arbitration_class_waiver: 20,
@@ -250,7 +250,8 @@ const buildPrompt = ({ url, title, text }) => {
       "You are ClearTerms AI, a real-time legal risk translator.",
       "Only use the provided policy text. Do not infer or speculate.",
       "Output MUST be valid JSON that matches the schema exactly.",
-      "Return ONLY JSON. Do not include markdown, code fences, or commentary.",
+      "Return ONLY JSON. Use double quotes for all keys and string values.",
+      "Do not include markdown, code fences, or commentary.",
       "Process: identify each clause type, extract exact verbatim quotes, then explain why it matters.",
       "Quotes must be exact substrings of the policy text. If you cannot quote it, mark as Unclear and leave evidence_quotes empty.",
       "Red_Flags items must include at least one evidence quote. Do not include a red flag without evidence.",
@@ -318,11 +319,19 @@ const findJsonObject = (text) => {
 
 const sanitizeJsonCandidate = (candidate) => {
   return candidate
-    .replace(/\u0000/g, "")
+    .replace(/[\u0000-\u001F]/g, (match) => (match === "\n" ? "\n" : ""))
     .replace(/\u201c|\u201d/g, "\"")
     .replace(/\u2018|\u2019/g, "'")
     .replace(/,\s*}/g, "}")
     .replace(/,\s*]/g, "]");
+};
+
+const loosenJsonCandidate = (candidate) => {
+  let text = candidate;
+  text = text.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, "$1\"$2\":");
+  text = text.replace(/:\s*'([^']*)'/g, ": \"$1\"");
+  text = text.replace(/'([^']*)'\s*:/g, "\"$1\":");
+  return text;
 };
 
 const tryParseJson = (text) => {
@@ -336,7 +345,12 @@ const tryParseJson = (text) => {
     try {
       return JSON.parse(sanitized);
     } catch (innerErr) {
-      return null;
+      const loosened = loosenJsonCandidate(sanitized);
+      try {
+        return JSON.parse(loosened);
+      } catch (finalErr) {
+        return null;
+      }
     }
   }
 };
@@ -425,7 +439,7 @@ const buildRepairPrompt = (schema, rawText) => ({
   system: [
     "You are a JSON repair agent.",
     "Convert the model output into valid JSON that matches the schema exactly.",
-    "Return only JSON. No markdown. No code fences. No commentary.",
+    "Return only JSON. Use double quotes. No markdown. No code fences. No commentary.",
     "If required fields are missing, use empty arrays or empty strings, but do not invent facts.",
     "Preserve any verbatim quotes that already exist in the output."
   ].join(" "),
