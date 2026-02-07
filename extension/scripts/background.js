@@ -1,4 +1,4 @@
-const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"];
 const ANALYSIS_VERSION = 2;
 const MAX_INPUT_CHARS = 12000;
 const OUTPUT_TOKENS = 700;
