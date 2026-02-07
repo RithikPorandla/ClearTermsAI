@@ -1,6 +1,6 @@
 const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite"];
 const ANALYSIS_VERSION = 3;
-const MAX_INPUT_CHARS = 12000;
+const MAX_INPUT_CHARS = 16000;
 const OUTPUT_TOKENS = 1200;
 
 const RISK_RULES = {
@@ -60,6 +60,182 @@ const hashText = (text) => {
     hash |= 0;
   }
   return Math.abs(hash).toString(16);
+};
+
+const findSentenceSnippet = (text, index) => {
+  if (!text || index < 0) return "";
+  const boundaries = [".", "!", "?", "\n"];
+  let start = 0;
+  for (const mark of boundaries) {
+    const pos = text.lastIndexOf(mark, index);
+    if (pos > start) start = pos + 1;
+  }
+  let end = text.length;
+  for (const mark of boundaries) {
+    const pos = text.indexOf(mark, index);
+    if (pos !== -1 && pos + 1 < end) end = pos + 1;
+  }
+  let snippet = text.slice(start, end).trim();
+  if (snippet.length < 40) {
+    const windowStart = Math.max(0, index - 120);
+    const windowEnd = Math.min(text.length, index + 120);
+    snippet = text.slice(windowStart, windowEnd).trim();
+  }
+  if (snippet.length > 240) {
+    snippet = snippet.slice(0, 240).trim();
+  }
+  return snippet;
+};
+
+const findQuote = (text, patterns) => {
+  if (!text || !patterns || patterns.length === 0) return "";
+  const lower = text.toLowerCase();
+  for (const pattern of patterns) {
+    if (!pattern) continue;
+    let index = -1;
+    if (pattern instanceof RegExp) {
+      const match = pattern.exec(lower);
+      if (match) index = match.index;
+    } else {
+      index = lower.indexOf(String(pattern).toLowerCase());
+    }
+    if (index !== -1) {
+      const snippet = findSentenceSnippet(text, index);
+      if (snippet) return snippet;
+    }
+  }
+  return "";
+};
+
+const buildFallbackAnalysis = (text) => {
+  const flags = [];
+  const rights = [];
+  const escape = [];
+
+  const addFlag = (clauseType, title, why, patterns) => {
+    if (flags.length >= 4) return;
+    const quote = findQuote(text, patterns);
+    if (!quote) return;
+    flags.push({
+      clause_type: clauseType,
+      title,
+      why_it_matters: why,
+      evidence_quotes: [quote]
+    });
+  };
+
+  const addRight = (right, details, patterns) => {
+    if (rights.length >= 3) return;
+    const quote = findQuote(text, patterns);
+    if (!quote) return;
+    rights.push({
+      right,
+      details,
+      evidence_quotes: [quote]
+    });
+  };
+
+  const addEscape = (step, details, patterns) => {
+    if (escape.length >= 2) return;
+    const quote = findQuote(text, patterns);
+    if (!quote) return;
+    escape.push({
+      step,
+      details,
+      evidence_quotes: [quote]
+    });
+  };
+
+  addFlag(
+    "forced_arbitration_class_waiver",
+    "Forced arbitration or class action waiver",
+    "Limits how disputes can be resolved.",
+    ["arbitration", "class action", "waive", "waiver", "binding arbitration"]
+  );
+  addFlag(
+    "data_sale_or_ad_sharing",
+    "Data sharing for ads or partners",
+    "Your data may be shared or sold for advertising or partners.",
+    ["share", "sharing", "sell", "sale", "advertising", "marketing", "third party"]
+  );
+  addFlag(
+    "auto_renewal_or_difficult_cancellation",
+    "Auto-renewal or difficult cancellation",
+    "Subscriptions may renew automatically or require extra steps to cancel.",
+    ["auto-renew", "automatically renew", "cancel", "cancellation", "subscription"]
+  );
+  addFlag(
+    "broad_user_content_license",
+    "Broad license to your content",
+    "Your content may be licensed broadly for platform use.",
+    ["license", "worldwide", "royalty-free", "perpetual", "your content"]
+  );
+  addFlag(
+    "no_refunds",
+    "No refunds or limited refunds",
+    "Refunds may be limited or unavailable.",
+    ["no refunds", "non-refundable", "nonrefundable", "refund"]
+  );
+  addFlag(
+    "broad_liability_disclaimers",
+    "Broad liability disclaimers",
+    "Limits the company's responsibility for damages.",
+    ["limitation of liability", "liability", "as is", "disclaimer"]
+  );
+  addFlag(
+    "unilateral_policy_changes",
+    "Unilateral policy changes",
+    "Policies may change without clear notice or consent.",
+    ["we may change", "we may update", "modify these terms", "change these terms"]
+  );
+  addFlag(
+    "ai_training_on_user_data",
+    "AI training on user data",
+    "Your data may be used to train AI or improve models.",
+    ["machine learning", "train", "training", "artificial intelligence", "improve our models"]
+  );
+
+  addRight(
+    "Access or delete data",
+    "You may be able to access or delete personal data.",
+    ["access", "delete", "erase", "request a copy", "data subject"]
+  );
+  addRight(
+    "Opt out of marketing",
+    "You may be able to opt out of marketing communications.",
+    ["opt out", "unsubscribe", "marketing communications"]
+  );
+
+  addEscape(
+    "Close your account",
+    "Look for account deletion or closure steps.",
+    ["delete your account", "close your account", "terminate your account"]
+  );
+  addEscape(
+    "Contact support",
+    "Support or privacy contact for requests.",
+    ["contact us", "privacy team", "support", "help center"]
+  );
+
+  const gistBase =
+    flags.length > 0
+      ? `Potential risks spotted: ${flags.map((flag) => flag.title).slice(0, 2).join(" and ")}.`
+      : "Policy text detected, but specific risk clauses were unclear.";
+  const gist = `${gistBase} Review highlighted sections before accepting.`;
+
+  return {
+    Risk_Score: 0,
+    Risk_Level: "Low",
+    The_Gist: gist,
+    Red_Flags: flags,
+    Data_Rights: rights,
+    The_Escape: escape,
+    Confidence: flags.length > 0 ? 0.45 : 0.3,
+    Disclaimers: [
+      "Informational only - not legal advice.",
+      "Quotes are verbatim from the policy text provided."
+    ]
+  };
 };
 
 const isMeaningfulAnalysis = (analysis) => {
@@ -136,6 +312,21 @@ const updateDetectorModel = async ({ signals, isPolicyPage, outcome }) => {
       updated_at: new Date().toISOString()
     }
   });
+};
+
+const logAnalysisDebug = async ({ url, model, error, note, sample }) => {
+  const stored = await chrome.storage.local.get("analysis_debug_log");
+  const list = Array.isArray(stored.analysis_debug_log) ? stored.analysis_debug_log : [];
+  const entry = {
+    url: url || "",
+    model: model || null,
+    error: error || null,
+    note: note || null,
+    sample: sample || null,
+    timestamp: new Date().toISOString()
+  };
+  const next = [entry, ...list].slice(0, 30);
+  await chrome.storage.local.set({ analysis_debug_log: next });
 };
 
 const normalizeAnalysis = (analysis) => {
@@ -533,6 +724,12 @@ const callGemini = async ({ url, title, text }) => {
     if (!response.ok) {
       const errText = await response.text();
       lastError = errText || lastError;
+      await logAnalysisDebug({
+        url,
+        model,
+        error: lastError,
+        note: "model_error"
+      });
       continue;
     }
 
@@ -540,6 +737,12 @@ const callGemini = async ({ url, title, text }) => {
     const textOut = extractResponseText(data);
     if (!textOut) {
       lastError = "Gemini returned no output.";
+      await logAnalysisDebug({
+        url,
+        model,
+        error: lastError,
+        note: "empty_output"
+      });
       continue;
     }
 
@@ -553,6 +756,12 @@ const callGemini = async ({ url, title, text }) => {
       });
       if (!repaired) {
         lastError = "Unable to parse model output.";
+        await logAnalysisDebug({
+          url,
+          model,
+          error: lastError,
+          note: "parse_error"
+        });
         continue;
       }
       analysis = repaired;
@@ -561,9 +770,27 @@ const callGemini = async ({ url, title, text }) => {
     const shaped = ensureAnalysisShape(analysis);
     if (!isMeaningfulAnalysis(shaped)) {
       lastError = "EMPTY_ANALYSIS";
+      await logAnalysisDebug({
+        url,
+        model,
+        error: lastError,
+        note: "empty_analysis"
+      });
       continue;
     }
     return { analysis: normalizeAnalysis(shaped) };
+  }
+
+  const fallback = buildFallbackAnalysis(text);
+  const shapedFallback = ensureAnalysisShape(fallback);
+  if (isMeaningfulAnalysis(shapedFallback)) {
+    await logAnalysisDebug({
+      url,
+      model: "heuristic",
+      error: lastError,
+      note: "fallback_used"
+    });
+    return { analysis: normalizeAnalysis(shapedFallback), fallback: true };
   }
 
   return { error: "PARSE_ERROR", message: lastError };
