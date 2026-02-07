@@ -169,6 +169,13 @@ const buildPrompt = ({ url, title, text }) => {
 };
 
 const extractResponseText = (data) => {
+  const parts = data?.candidates?.[0]?.content?.parts;
+  if (Array.isArray(parts)) {
+    return parts
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .join("\n")
+      .trim();
+  }
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (typeof text === "string") return text.trim();
   return "";
@@ -184,7 +191,7 @@ const truncateText = (text) => {
 
 const stripCodeFences = (text) => {
   if (!text) return "";
-  return text.replace(/^```[a-zA-Z]*\s*/m, "").replace(/```\s*$/m, "");
+  return text.replace(/```[a-zA-Z]*\s*/g, "").replace(/```/g, "");
 };
 
 const findJsonObject = (text) => {
@@ -209,6 +216,15 @@ const findJsonObject = (text) => {
   return "";
 };
 
+const sanitizeJsonCandidate = (candidate) => {
+  return candidate
+    .replace(/\u0000/g, "")
+    .replace(/\u201c|\u201d/g, "\"")
+    .replace(/\u2018|\u2019/g, "'")
+    .replace(/,\s*}/g, "}")
+    .replace(/,\s*]/g, "]");
+};
+
 const tryParseJson = (text) => {
   const candidate = findJsonObject(text);
   if (!candidate) return null;
@@ -216,16 +232,149 @@ const tryParseJson = (text) => {
   try {
     return JSON.parse(candidate);
   } catch (err) {
-    const sanitized = candidate
-      .replace(/\u0000/g, "")
-      .replace(/,\s*}/g, "}")
-      .replace(/,\s*]/g, "]");
+    const sanitized = sanitizeJsonCandidate(candidate);
     try {
       return JSON.parse(sanitized);
     } catch (innerErr) {
       return null;
     }
   }
+};
+
+const ensureAnalysisShape = (analysis) => {
+  const safeText = (value, fallback = "") =>
+    typeof value === "string" ? value : fallback;
+
+  const clampArray = (arr) => (Array.isArray(arr) ? arr : []);
+
+  const sanitizeEvidence = (quotes) =>
+    clampArray(quotes).filter((q) => typeof q === "string" && q.trim().length > 0);
+
+  const sanitizeFlags = clampArray(analysis?.Red_Flags)
+    .map((flag) => {
+      if (!flag || typeof flag !== "object") return null;
+      return {
+        clause_type: CLAUSE_TYPES.includes(flag.clause_type)
+          ? flag.clause_type
+          : "other",
+        title: safeText(flag.title, "Unclear"),
+        why_it_matters: safeText(flag.why_it_matters, ""),
+        evidence_quotes: sanitizeEvidence(flag.evidence_quotes)
+      };
+    })
+    .filter((flag) => flag && flag.evidence_quotes.length > 0);
+
+  const sanitizeRights = clampArray(analysis?.Data_Rights)
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      return {
+        right: safeText(item.right, "Unclear"),
+        details: safeText(item.details, ""),
+        evidence_quotes: sanitizeEvidence(item.evidence_quotes)
+      };
+    })
+    .filter((item) => item && item.evidence_quotes.length > 0);
+
+  const sanitizeEscape = clampArray(analysis?.The_Escape)
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      return {
+        step: safeText(item.step, "Unclear"),
+        details: safeText(item.details, ""),
+        evidence_quotes: sanitizeEvidence(item.evidence_quotes)
+      };
+    })
+    .filter((item) => item && item.evidence_quotes.length > 0);
+
+  const confidenceRaw = typeof analysis?.Confidence === "number" ? analysis.Confidence : 0.3;
+  const confidence = Math.min(1, Math.max(0, confidenceRaw));
+
+  const disclaimersRaw = clampArray(analysis?.Disclaimers).filter(
+    (item) => typeof item === "string"
+  );
+  const disclaimers =
+    disclaimersRaw.length > 0
+      ? disclaimersRaw
+      : [
+          "Informational only — not legal advice.",
+          "Quotes are verbatim from the policy text provided."
+        ];
+
+  const gist = safeText(analysis?.The_Gist, "");
+  const trimmedGist = gist.length > 400 ? gist.slice(0, 400) : gist;
+
+  return {
+    Risk_Score: typeof analysis?.Risk_Score === "number" ? analysis.Risk_Score : 0,
+    Risk_Level: safeText(analysis?.Risk_Level, "Low"),
+    The_Gist: trimmedGist,
+    Red_Flags: sanitizeFlags,
+    Data_Rights: sanitizeRights,
+    The_Escape: sanitizeEscape,
+    Confidence: confidence,
+    Disclaimers: disclaimers
+  };
+};
+
+const truncateForRepair = (text) => {
+  if (!text) return "";
+  if (text.length <= 12000) return text;
+  return text.slice(0, 12000);
+};
+
+const buildRepairPrompt = (schema, rawText) => ({
+  system: [
+    "You are a JSON repair agent.",
+    "Convert the model output into valid JSON that matches the schema exactly.",
+    "Return only JSON. No markdown. No code fences. No commentary.",
+    "If required fields are missing, use empty arrays or empty strings, but do not invent facts.",
+    "Preserve any verbatim quotes that already exist in the output."
+  ].join(" "),
+  user: [
+    "Schema:",
+    JSON.stringify(schema),
+    "",
+    "Model Output:",
+    truncateForRepair(rawText)
+  ].join("\n")
+});
+
+const repairJsonWithGemini = async ({ apiKey, schema, rawText }) => {
+  const prompt = buildRepairPrompt(schema, rawText);
+  const payload = {
+    system_instruction: {
+      parts: [{ text: prompt.system }]
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt.user }]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseJsonSchema: schema,
+      temperature: 0,
+      maxOutputTokens: OUTPUT_TOKENS
+    }
+  };
+
+  const response = await fetch(GEMINI_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  const textOut = extractResponseText(data);
+  if (!textOut) return null;
+  return tryParseJson(textOut);
 };
 
 const callGemini = async ({ url, title, text }) => {
@@ -278,10 +427,19 @@ const callGemini = async ({ url, title, text }) => {
 
   let analysis = tryParseJson(textOut);
   if (!analysis) {
-    return { error: "PARSE_ERROR", message: "Unable to parse model output." };
+    const repaired = await repairJsonWithGemini({
+      apiKey,
+      schema,
+      rawText: textOut
+    });
+    if (!repaired) {
+      return { error: "PARSE_ERROR", message: "Unable to parse model output." };
+    }
+    analysis = repaired;
   }
 
-  return { analysis: normalizeAnalysis(analysis) };
+  const shaped = ensureAnalysisShape(analysis);
+  return { analysis: normalizeAnalysis(shaped) };
 };
 
 const getCachedAnalysis = async ({ domain, textHash }) => {
