@@ -32,6 +32,26 @@ const CLAUSE_TYPES = [
   "other"
 ];
 
+const DETECTOR_DEFAULTS = {
+  weights: {
+    url_pattern: 2,
+    title_keyword: 2,
+    heading_keyword: 2,
+    body_keyword: 1,
+    legal_terms: 2,
+    longform_text: 1
+  },
+  threshold: 5,
+  samples: 0
+};
+
+const DETECTOR_MIN_WEIGHT = 0.5;
+const DETECTOR_MAX_WEIGHT = 4;
+const DETECTOR_MIN_THRESHOLD = 3;
+const DETECTOR_MAX_THRESHOLD = 7;
+const DETECTOR_WEIGHT_STEP = 0.1;
+const DETECTOR_THRESHOLD_STEP = 0.1;
+
 const hashText = (text) => {
   let hash = 5381;
   for (let i = 0; i < text.length; i += 1) {
@@ -39,6 +59,73 @@ const hashText = (text) => {
     hash |= 0;
   }
   return Math.abs(hash).toString(16);
+};
+
+const normalizeDetector = (detector) => {
+  const base = DETECTOR_DEFAULTS;
+  const weights = {
+    ...base.weights,
+    ...(detector?.weights || {})
+  };
+  const threshold =
+    typeof detector?.threshold === "number" ? detector.threshold : base.threshold;
+  const samples = typeof detector?.samples === "number" ? detector.samples : base.samples;
+  return { weights, threshold, samples };
+};
+
+const logDetectionEvent = async ({ url, domain, isPolicyPage, signals, textLength, success, error }) => {
+  const stored = await chrome.storage.local.get("policy_detection_log");
+  const list = Array.isArray(stored.policy_detection_log)
+    ? stored.policy_detection_log
+    : [];
+  const entry = {
+    url,
+    domain,
+    isPolicyPage: Boolean(isPolicyPage),
+    signals: Array.isArray(signals) ? signals : [],
+    textLength: Number.isFinite(textLength) ? textLength : 0,
+    success: Boolean(success),
+    error: error || null,
+    timestamp: new Date().toISOString()
+  };
+  const next = [entry, ...list].slice(0, 50);
+  await chrome.storage.local.set({ policy_detection_log: next });
+};
+
+const updateDetectorModel = async ({ signals, isPolicyPage, outcome }) => {
+  if (!Array.isArray(signals) || signals.length === 0) return;
+  const stored = await chrome.storage.local.get("policy_detector");
+  const detector = normalizeDetector(stored.policy_detector);
+  const weights = { ...detector.weights };
+  let threshold = detector.threshold;
+
+  if (outcome === "success") {
+    signals.forEach((sig) => {
+      const current = typeof weights[sig] === "number" ? weights[sig] : 1;
+      weights[sig] = Math.min(DETECTOR_MAX_WEIGHT, current + DETECTOR_WEIGHT_STEP);
+    });
+    if (!isPolicyPage) {
+      threshold = Math.max(DETECTOR_MIN_THRESHOLD, threshold - DETECTOR_THRESHOLD_STEP);
+    }
+  }
+
+  if (outcome === "no_text" && isPolicyPage) {
+    signals.forEach((sig) => {
+      const current = typeof weights[sig] === "number" ? weights[sig] : 1;
+      weights[sig] = Math.max(DETECTOR_MIN_WEIGHT, current - DETECTOR_WEIGHT_STEP);
+    });
+    threshold = Math.min(DETECTOR_MAX_THRESHOLD, threshold + DETECTOR_THRESHOLD_STEP);
+  }
+
+  const samples = detector.samples + 1;
+  await chrome.storage.local.set({
+    policy_detector: {
+      weights,
+      threshold,
+      samples,
+      updated_at: new Date().toISOString()
+    }
+  });
 };
 
 const normalizeAnalysis = (analysis) => {
@@ -405,7 +492,7 @@ const callGemini = async ({ url, title, text }) => {
       generationConfig: {
         responseMimeType: "application/json",
         responseJsonSchema: schema,
-        temperature: 0.2,
+        temperature: 0.1,
         maxOutputTokens: OUTPUT_TOKENS
       }
     };
@@ -490,19 +577,52 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const textHash = payload.textHash || hashText(text || "");
 
     (async () => {
+      const detectionMeta = {
+        url,
+        domain,
+        isPolicyPage: payload.isPolicyPage,
+        signals: payload.signals,
+        textLength: text ? text.length : 0
+      };
+
       if (!text || text.length < 400) {
+        await logDetectionEvent({
+          ...detectionMeta,
+          success: false,
+          error: "NO_TEXT"
+        });
+        await updateDetectorModel({
+          signals: payload.signals,
+          isPolicyPage: payload.isPolicyPage,
+          outcome: "no_text"
+        });
         sendResponse({ error: "NO_TEXT", message: "Policy text is too short or missing." });
         return;
       }
 
       const cached = await getCachedAnalysis({ domain, textHash });
       if (cached.analysis) {
+        await logDetectionEvent({
+          ...detectionMeta,
+          success: true,
+          error: null
+        });
+        await updateDetectorModel({
+          signals: payload.signals,
+          isPolicyPage: payload.isPolicyPage,
+          outcome: "success"
+        });
         sendResponse({ analysis: cached.analysis });
         return;
       }
 
       const result = await callGemini({ url, title, text });
       if (result.error) {
+        await logDetectionEvent({
+          ...detectionMeta,
+          success: false,
+          error: result.error
+        });
         sendResponse(result);
         return;
       }
@@ -515,6 +635,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       };
 
       await saveAnalysis({ domain, analysis: result.analysis, meta });
+      await logDetectionEvent({
+        ...detectionMeta,
+        success: true,
+        error: null
+      });
+      await updateDetectorModel({
+        signals: payload.signals,
+        isPolicyPage: payload.isPolicyPage,
+        outcome: "success"
+      });
       sendResponse({ analysis: result.analysis });
     })();
 
