@@ -1,0 +1,17 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #f7f3ee;
+  color: #101114;
+  font-family: "Optima", "Candara", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
