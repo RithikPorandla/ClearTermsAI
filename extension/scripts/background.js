@@ -1,5 +1,4 @@
-﻿const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-const MODEL_ID = "gemini-2.5-flash";
+const MODEL_FALLBACKS = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
 const MAX_INPUT_CHARS = 12000;
 const OUTPUT_TOKENS = 700;
 
@@ -145,17 +144,21 @@ const buildSchema = () => ({
   }
 });
 
+const buildEndpoint = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
 const buildPrompt = ({ url, title, text }) => {
   return {
     system: [
       "You are ClearTerms AI, a real-time legal risk translator.",
       "Only use the provided policy text. Do not infer or speculate.",
       "Output MUST be valid JSON that matches the schema exactly.",
+      "Return ONLY JSON. Do not include markdown, code fences, or commentary.",
       "Process: identify each clause type, extract exact verbatim quotes, then explain why it matters.",
       "Quotes must be exact substrings of the policy text. If you cannot quote it, mark as Unclear and leave evidence_quotes empty.",
       "Red_Flags items must include at least one evidence quote. Do not include a red flag without evidence.",
       "Data_Rights and The_Escape should only include items with evidence quotes; otherwise leave arrays empty.",
-      "Include the disclaimers: 'Informational only — not legal advice.' and 'Quotes are verbatim from the policy text provided.'",
+      "Include the disclaimers: 'Informational only - not legal advice.' and 'Quotes are verbatim from the policy text provided.'",
       "Keep The_Gist to at most two sentences and avoid legal advice.",
       "Be concise. Prefer fewer, higher-confidence items over exhaustive lists."
     ].join(" "),
@@ -296,7 +299,7 @@ const ensureAnalysisShape = (analysis) => {
     disclaimersRaw.length > 0
       ? disclaimersRaw
       : [
-          "Informational only — not legal advice.",
+          "Informational only - not legal advice.",
           "Quotes are verbatim from the policy text provided."
         ];
 
@@ -338,7 +341,7 @@ const buildRepairPrompt = (schema, rawText) => ({
   ].join("\n")
 });
 
-const repairJsonWithGemini = async ({ apiKey, schema, rawText }) => {
+const repairJsonWithGemini = async ({ apiKey, schema, rawText, model }) => {
   const prompt = buildRepairPrompt(schema, rawText);
   const payload = {
     system_instruction: {
@@ -358,7 +361,7 @@ const repairJsonWithGemini = async ({ apiKey, schema, rawText }) => {
     }
   };
 
-  const response = await fetch(GEMINI_ENDPOINT, {
+  const response = await fetch(buildEndpoint(model), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -386,60 +389,69 @@ const callGemini = async ({ url, title, text }) => {
 
   const prompt = buildPrompt({ url, title, text: truncateText(text) });
   const schema = buildSchema();
+  let lastError = "Unable to parse model output.";
 
-  const payload = {
-    system_instruction: {
-      parts: [{ text: prompt.system }]
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: prompt.user }]
+  for (const model of MODEL_FALLBACKS) {
+    const payload = {
+      system_instruction: {
+        parts: [{ text: prompt.system }]
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt.user }]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseJsonSchema: schema,
+        temperature: 0.2,
+        maxOutputTokens: OUTPUT_TOKENS
       }
-    ],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseJsonSchema: schema,
-      temperature: 0.2,
-      maxOutputTokens: OUTPUT_TOKENS
-    }
-  };
+    };
 
-  const response = await fetch(GEMINI_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    return { error: "GEMINI_ERROR", message: errText };
-  }
-
-  const data = await response.json();
-  const textOut = extractResponseText(data);
-  if (!textOut) {
-    return { error: "EMPTY_RESPONSE", message: "Gemini returned no output." };
-  }
-
-  let analysis = tryParseJson(textOut);
-  if (!analysis) {
-    const repaired = await repairJsonWithGemini({
-      apiKey,
-      schema,
-      rawText: textOut
+    const response = await fetch(buildEndpoint(model), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify(payload)
     });
-    if (!repaired) {
-      return { error: "PARSE_ERROR", message: "Unable to parse model output." };
+
+    if (!response.ok) {
+      const errText = await response.text();
+      lastError = errText || lastError;
+      continue;
     }
-    analysis = repaired;
+
+    const data = await response.json();
+    const textOut = extractResponseText(data);
+    if (!textOut) {
+      lastError = "Gemini returned no output.";
+      continue;
+    }
+
+    let analysis = tryParseJson(textOut);
+    if (!analysis) {
+      const repaired = await repairJsonWithGemini({
+        apiKey,
+        schema,
+        rawText: textOut,
+        model
+      });
+      if (!repaired) {
+        lastError = "Unable to parse model output.";
+        continue;
+      }
+      analysis = repaired;
+    }
+
+    const shaped = ensureAnalysisShape(analysis);
+    return { analysis: normalizeAnalysis(shaped) };
   }
 
-  const shaped = ensureAnalysisShape(analysis);
-  return { analysis: normalizeAnalysis(shaped) };
+  return { error: "PARSE_ERROR", message: lastError };
 };
 
 const getCachedAnalysis = async ({ domain, textHash }) => {
