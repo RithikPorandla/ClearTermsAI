@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "ClearTerms AI — Real-Time Legal Risk Translator",
+  title: "ClearTerms AI ? Real-Time Legal Risk Translator",
   description:
     "ClearTerms AI helps you understand Terms of Service and Privacy Policies in real time with evidence-first risk insights."
 };
