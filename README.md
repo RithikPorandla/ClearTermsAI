@@ -2,7 +2,7 @@
 
 **ClearTerms AI** is a real‑time legal risk translator for Terms of Service and Privacy Policies. It highlights the clauses that matter, shows exact evidence quotes, and gives you a clear risk score before you click “Accept.”
 
-## Why People Use ClearTerms AI
+## Why Use ClearTerms AI
 - **Understand faster**: Get a 2‑sentence summary and a risk score in seconds.
 - **Evidence‑first**: Every red flag includes verbatim quotes from the policy.
 - **Actionable**: Find opt‑out and account deletion steps quickly.
@@ -27,9 +27,3 @@
 - Informational only — **not legal advice**.
 - Evidence quotes are taken verbatim from the policy text.
 - Your API key is stored locally in `chrome.storage.local`.
-
-## Need Help?
-Open an issue on GitHub and we’ll help you get set up.
-
----
-© 2026 ClearTerms AI
