@@ -1,4 +1,4 @@
-﻿const statusEl = document.getElementById("status");
+const statusEl = document.getElementById("status");
 const analyzeBtn = document.getElementById("analyze");
 const viewBtn = document.getElementById("view-report");
 const optionsBtn = document.getElementById("open-options");
@@ -16,17 +16,27 @@ const setStatus = (text) => {
   statusEl.textContent = text;
 };
 
+const RISK_COLORS = {
+  Critical: "#991b1b",
+  High: "#c0552e",
+  Medium: "#d97706",
+  Low: "#059669",
+  Minimal: "#166534"
+};
+
 const setRisk = (score, level) => {
   riskScoreEl.textContent = Number.isFinite(score) ? String(score) : "--";
-  riskLevelEl.textContent = level || "Unclear";
-  meterEl.classList.remove("risk-low", "risk-med", "risk-high", "risk-extreme");
-  const safeScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0;
-  const cls = level === "Low" ? "risk-low"
-    : level === "Medium" ? "risk-med"
-    : level === "High" ? "risk-high"
-    : level === "Extreme" ? "risk-extreme"
-    : null;
-  if (cls) meterEl.classList.add(cls);
+  riskLevelEl.textContent = level || "Scanning…";
+  const color = RISK_COLORS[level] || "#64748b";
+  meterEl.style.borderColor = color;
+  riskScoreEl.style.color = color;
+};
+
+const SEVERITY_COLORS = {
+  critical: "#dc2626",
+  high: "#ea580c",
+  medium: "#d97706",
+  low: "#059669"
 };
 
 const renderFlags = (flags) => {
@@ -34,16 +44,29 @@ const renderFlags = (flags) => {
   if (!flags || flags.length === 0) {
     const li = document.createElement("li");
     li.className = "flag";
-    li.textContent = "No major red flags detected or evidence unclear.";
+    li.textContent = "No major red flags detected.";
     flagsList.appendChild(li);
     return;
   }
-  flags.slice(0, 3).forEach((flag) => {
+  flags.slice(0, 4).forEach((flag) => {
     const li = document.createElement("li");
     li.className = "flag";
-    li.textContent = flag.title || flag.clause_type || "Red flag";
+    const dotColor = SEVERITY_COLORS[flag.severity] || "#94a3b8";
+    li.innerHTML = `
+      <span class="flag-dot" style="background:${dotColor}"></span>
+      <span class="flag-text">
+        <strong>${escapeHtml(flag.title || flag.clause_type)}</strong>
+        <span class="flag-plain">${escapeHtml(flag.plain_english || flag.why_it_matters || "")}</span>
+      </span>
+    `;
     flagsList.appendChild(li);
   });
+};
+
+const escapeHtml = (str) => {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
 };
 
 const renderAnalysis = (analysis) => {
@@ -78,8 +101,6 @@ const requestAnalysis = async () => {
         setStatus("Add your Gemini API key in settings.");
       } else if (response.error === "GEMINI_ERROR") {
         setStatus("Gemini request failed. Check your key and quota.");
-      } else if (response.error === "PARSE_ERROR" && response.message === "EMPTY_ANALYSIS") {
-        setStatus("Analysis was inconclusive. Try again.");
       } else {
         setStatus(response.message || "Analysis failed.");
       }
@@ -122,7 +143,7 @@ const collectPolicy = async () => {
     lastDomain = response.domain;
 
     if (!response.isPolicyPage) {
-      setStatus("This doesn’t look like a policy page. You can still analyze it.");
+      setStatus("This doesn't look like a policy page. You can still analyze it.");
     } else {
       setStatus("Policy page detected.");
     }

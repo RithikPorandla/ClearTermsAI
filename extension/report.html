@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -12,24 +12,25 @@
       <div class="logo">CT</div>
       <div>
         <div class="title">ClearTerms AI</div>
-        <div class="subtitle">Full Policy Intelligence Report</div>
+        <div class="subtitle">Policy Intelligence Report</div>
       </div>
     </div>
     <div class="meta">
-      <div id="domain">Domain: --</div>
-      <div id="timestamp">Analyzed: --</div>
-      <div class="meta-pill">Evidence-first</div>
+      <div class="meta-domain" id="domain">--</div>
+      <div class="meta-time">Analyzed: <span id="timestamp">--</span></div>
     </div>
   </header>
 
   <main class="report">
     <aside class="sidebar">
-      <div class="sidebar-title">Report Index</div>
+      <div class="sidebar-title">Report</div>
       <nav class="sidebar-nav">
-        <a href="#summary">Executive Summary</a>
+        <a href="#summary">Summary</a>
         <a href="#flags">Red Flags</a>
-        <a href="#rights">Your Data Rights</a>
+        <a href="#data-practices">Data Practices</a>
+        <a href="#rights">Data Rights</a>
         <a href="#escape">Opt Out / Delete</a>
+        <a href="#readability">Readability</a>
         <a href="#disclaimers">Disclaimers</a>
       </nav>
       <button id="export-pdf" class="export">Export PDF</button>
@@ -37,35 +38,25 @@
 
     <section class="panel executive" id="summary">
       <div class="score-wrap">
-        <div class="score-box" id="report-score">--</div>
-        <div>
-          <div class="label" id="report-level">Unclear</div>
-          <div class="score-caption">Risk Index</div>
+        <div class="score-ring" id="score-ring">
+          <div class="score-value" id="report-score">--</div>
+          <div class="score-level" id="report-level">Unclear</div>
         </div>
       </div>
       <div class="summary-wrap">
         <div class="section-kicker">Executive Summary</div>
-        <p id="report-gist" class="gist">We’ll show the policy summary here.</p>
-        <div class="summary-grid">
-          <div class="summary-card">
-            <div class="summary-title">Evidence</div>
-            <div class="summary-text">Direct quotes only. No speculation.</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-title">Local-First</div>
-            <div class="summary-text">Results stored on your device.</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-title">Actionable</div>
-            <div class="summary-text">Opt-out and deletion steps highlighted.</div>
-          </div>
-        </div>
+        <p id="report-gist" class="gist">Loading report…</p>
       </div>
     </section>
 
     <section class="panel" id="flags">
       <div class="section-title">Red Flags</div>
       <div id="report-flags" class="cards"></div>
+    </section>
+
+    <section class="panel" id="data-practices">
+      <div class="section-title">Data Practices</div>
+      <div id="report-data" class="cards"></div>
     </section>
 
     <section class="panel" id="rights">
@@ -78,6 +69,11 @@
       <div id="report-escape" class="cards"></div>
     </section>
 
+    <section class="panel" id="readability">
+      <div class="section-title">Readability</div>
+      <div id="report-readability" class="cards"></div>
+    </section>
+
     <section class="panel" id="disclaimers">
       <div class="section-title">Disclaimers</div>
       <ul id="report-disclaimers" class="list"></ul>
@@ -85,7 +81,7 @@
   </main>
 
   <footer class="footer">
-    Informational only — not legal advice. Evidence quotes are taken from the provided policy text.
+    ClearTerms AI — informational only, not legal advice. Evidence quotes are verbatim from the policy text.
   </footer>
 
   <script src="scripts/report.js"></script>

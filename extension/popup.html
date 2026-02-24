@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -13,43 +13,36 @@
         <div class="logo">CT</div>
         <div>
           <div class="title">ClearTerms AI</div>
-          <div class="subtitle">Real-time legal risk translator</div>
+          <div class="subtitle">Policy Risk Scanner</div>
         </div>
       </div>
       <button id="open-options" class="ghost">Settings</button>
     </header>
 
-    <section class="hero-card reveal" aria-live="polite">
+    <section class="hero-card" aria-live="polite">
       <div class="meter" id="risk-meter">
-        <div class="ring" aria-hidden="true"></div>
         <div class="score" id="risk-score">--</div>
-        <div class="label" id="risk-level">Checking…</div>
-        <div class="meter-caption">Risk Index</div>
+        <div class="label" id="risk-level">Scanning…</div>
       </div>
       <div class="summary">
-        <div class="summary-title">Executive Gist</div>
-        <p id="gist">We’ll summarize the policy once it’s analyzed.</p>
-        <div class="pill-row">
-          <span class="pill">Evidence-first</span>
-          <span class="pill">Local-first</span>
-          <span class="pill">No legal advice</span>
-        </div>
+        <div class="summary-title">Executive Summary</div>
+        <p id="gist">We'll summarize the policy once analyzed.</p>
       </div>
     </section>
 
     <section class="flags">
-      <div class="section-title">Top Red Flags</div>
+      <div class="section-title">Red Flags</div>
       <ul id="flags-list" class="flag-list"></ul>
     </section>
 
     <section class="actions">
       <button id="analyze" class="primary">Analyze This Policy</button>
-      <button id="view-report" class="secondary" disabled>View Full Report</button>
+      <button id="view-report" class="secondary" disabled>Full Report →</button>
     </section>
 
     <section id="status" class="status"></section>
     <section class="disclaimer">
-      Informational only — not legal advice.
+      Not legal advice · Evidence-first · Local-first
     </section>
   </main>
 

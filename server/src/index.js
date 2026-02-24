@@ -1,4 +1,4 @@
-﻿import "dotenv/config";
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -103,92 +103,192 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-const RISK_RULES = {
-  forced_arbitration_class_waiver: 20,
-  broad_user_content_license: 15,
-  data_sale_or_ad_sharing: 15,
-  ai_training_on_user_data: 15,
-  unilateral_policy_changes: 10,
-  auto_renewal_or_difficult_cancellation: 10,
-  no_refunds: 8,
-  broad_liability_disclaimers: 7
+// --------------------------------------------------------------------------
+// Multi-dimensional risk scoring algorithm
+// --------------------------------------------------------------------------
+
+const CLAUSE_CATEGORIES = {
+  dispute_resolution: {
+    forced_arbitration_class_waiver: { base: 18, severity_multiplier: 1.2 },
+    jurisdiction_limitation: { base: 6, severity_multiplier: 1.0 }
+  },
+  data_practices: {
+    data_sale_or_ad_sharing: { base: 16, severity_multiplier: 1.15 },
+    ai_training_on_user_data: { base: 14, severity_multiplier: 1.1 },
+    cross_border_data_transfer: { base: 8, severity_multiplier: 1.0 },
+    biometric_data_collection: { base: 12, severity_multiplier: 1.2 }
+  },
+  content_rights: {
+    broad_user_content_license: { base: 14, severity_multiplier: 1.1 },
+    content_monetization: { base: 10, severity_multiplier: 1.0 }
+  },
+  financial: {
+    auto_renewal_or_difficult_cancellation: { base: 10, severity_multiplier: 1.0 },
+    no_refunds: { base: 8, severity_multiplier: 1.0 },
+    price_change_without_consent: { base: 7, severity_multiplier: 1.0 }
+  },
+  liability: {
+    broad_liability_disclaimers: { base: 7, severity_multiplier: 0.9 },
+    indemnification_clause: { base: 8, severity_multiplier: 1.0 }
+  },
+  governance: {
+    unilateral_policy_changes: { base: 10, severity_multiplier: 1.0 },
+    account_termination_without_cause: { base: 9, severity_multiplier: 1.05 },
+    survivability_of_unfair_terms: { base: 5, severity_multiplier: 0.9 }
+  }
 };
+
+const ALL_CLAUSE_TYPES = [];
+for (const cat of Object.values(CLAUSE_CATEGORIES)) {
+  for (const type of Object.keys(cat)) {
+    ALL_CLAUSE_TYPES.push(type);
+  }
+}
+ALL_CLAUSE_TYPES.push("other");
 
 const RISK_LEVELS = [
-  { min: 75, label: "Extreme" },
-  { min: 50, label: "High" },
-  { min: 25, label: "Medium" },
-  { min: 0, label: "Low" }
+  { min: 80, label: "Critical", color: "#991b1b" },
+  { min: 60, label: "High", color: "#c0552e" },
+  { min: 35, label: "Medium", color: "#c5883a" },
+  { min: 15, label: "Low", color: "#2f7a6d" },
+  { min: 0, label: "Minimal", color: "#166534" }
 ];
 
-const CLAUSE_TYPES = [
-  "forced_arbitration_class_waiver",
-  "broad_user_content_license",
-  "data_sale_or_ad_sharing",
-  "ai_training_on_user_data",
-  "unilateral_policy_changes",
-  "auto_renewal_or_difficult_cancellation",
-  "no_refunds",
-  "broad_liability_disclaimers",
-  "other"
-];
+const SEVERITY_ENUM = ["low", "medium", "high", "critical"];
 
-const normalizeAnalysis = (analysis) => {
-  const flags = Array.isArray(analysis.Red_Flags) ? analysis.Red_Flags : [];
-  const unique = new Set();
-  let score = 0;
-
-  flags.forEach((flag) => {
-    if (!flag || !flag.clause_type) return;
-    const type = flag.clause_type;
-    if (!RISK_RULES[type] || unique.has(type)) return;
-    unique.add(type);
-    score += RISK_RULES[type];
-  });
-
-  score = Math.min(100, score);
-  const level = RISK_LEVELS.find((entry) => score >= entry.min)?.label || "Low";
-
-  return {
-    ...analysis,
-    Risk_Score: score,
-    Risk_Level: level
-  };
+const severityWeight = (severity) => {
+  switch (severity) {
+    case "critical": return 1.4;
+    case "high": return 1.15;
+    case "medium": return 0.85;
+    case "low": return 0.6;
+    default: return 1.0;
+  }
 };
+
+const computeRiskScore = (flags) => {
+  if (!Array.isArray(flags) || flags.length === 0) {
+    return { score: 0, level: "Minimal", breakdown: {} };
+  }
+
+  const seen = new Set();
+  const breakdown = {};
+  let rawScore = 0;
+
+  for (const flag of flags) {
+    if (!flag?.clause_type || seen.has(flag.clause_type)) continue;
+    seen.add(flag.clause_type);
+
+    let basePoints = 5;
+    let multiplier = 1.0;
+    let category = "other";
+
+    for (const [catName, clauses] of Object.entries(CLAUSE_CATEGORIES)) {
+      if (clauses[flag.clause_type]) {
+        basePoints = clauses[flag.clause_type].base;
+        multiplier = clauses[flag.clause_type].severity_multiplier;
+        category = catName;
+        break;
+      }
+    }
+
+    const sevWeight = severityWeight(flag.severity);
+    const points = Math.round(basePoints * multiplier * sevWeight);
+
+    if (!breakdown[category]) breakdown[category] = { points: 0, flags: [] };
+    breakdown[category].points += points;
+    breakdown[category].flags.push(flag.clause_type);
+
+    rawScore += points;
+  }
+
+  const interactionBonus = computeInteractionBonus(breakdown);
+  rawScore += interactionBonus;
+
+  const score = Math.min(100, Math.max(0, rawScore));
+  const level = RISK_LEVELS.find((r) => score >= r.min)?.label || "Minimal";
+
+  return { score, level, breakdown };
+};
+
+const computeInteractionBonus = (breakdown) => {
+  let bonus = 0;
+  const cats = Object.keys(breakdown);
+
+  if (cats.includes("dispute_resolution") && cats.includes("liability")) {
+    bonus += 5;
+  }
+  if (cats.includes("data_practices") && cats.includes("content_rights")) {
+    bonus += 4;
+  }
+  if (cats.includes("financial") && cats.includes("governance")) {
+    bonus += 3;
+  }
+  if (cats.length >= 4) {
+    bonus += 3;
+  }
+
+  return bonus;
+};
+
+// --------------------------------------------------------------------------
+// Gemini prompt & schema
+// --------------------------------------------------------------------------
 
 const buildSchema = () => ({
   type: "object",
   additionalProperties: false,
   required: [
-    "Risk_Score",
-    "Risk_Level",
     "The_Gist",
     "Red_Flags",
+    "Data_Practices",
     "Data_Rights",
     "The_Escape",
+    "Readability",
     "Confidence",
     "Disclaimers"
   ],
   properties: {
-    Risk_Score: { type: "integer", minimum: 0, maximum: 100 },
-    Risk_Level: { type: "string", enum: ["Low", "Medium", "High", "Extreme"] },
-    The_Gist: { type: "string", maxLength: 400 },
+    The_Gist: { type: "string", maxLength: 500 },
     Red_Flags: {
       type: "array",
-      maxItems: 10,
+      maxItems: 12,
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["clause_type", "title", "why_it_matters", "evidence_quotes"],
+        required: ["clause_type", "severity", "title", "plain_english", "why_it_matters", "evidence_quotes"],
         properties: {
-          clause_type: { type: "string", enum: CLAUSE_TYPES },
+          clause_type: { type: "string", enum: ALL_CLAUSE_TYPES },
+          severity: { type: "string", enum: SEVERITY_ENUM },
           title: { type: "string" },
+          plain_english: { type: "string", maxLength: 200 },
           why_it_matters: { type: "string" },
           evidence_quotes: {
             type: "array",
+            minItems: 1,
             maxItems: 3,
             items: { type: "string" }
           }
+        }
+      }
+    },
+    Data_Practices: {
+      type: "object",
+      additionalProperties: false,
+      required: ["collects", "shares_with", "retention", "tracking_methods"],
+      properties: {
+        collects: {
+          type: "array",
+          items: { type: "string" }
+        },
+        shares_with: {
+          type: "array",
+          items: { type: "string" }
+        },
+        retention: { type: "string" },
+        tracking_methods: {
+          type: "array",
+          items: { type: "string" }
         }
       }
     },
@@ -197,13 +297,14 @@ const buildSchema = () => ({
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["right", "details", "evidence_quotes"],
+        required: ["right", "available", "details", "evidence_quotes"],
         properties: {
           right: { type: "string" },
+          available: { type: "boolean" },
           details: { type: "string" },
           evidence_quotes: {
             type: "array",
-            maxItems: 3,
+            maxItems: 2,
             items: { type: "string" }
           }
         }
@@ -214,16 +315,27 @@ const buildSchema = () => ({
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["step", "details", "evidence_quotes"],
+        required: ["action", "difficulty", "details", "evidence_quotes"],
         properties: {
-          step: { type: "string" },
+          action: { type: "string" },
+          difficulty: { type: "string", enum: ["easy", "moderate", "hard", "unclear"] },
           details: { type: "string" },
           evidence_quotes: {
             type: "array",
-            maxItems: 3,
+            maxItems: 2,
             items: { type: "string" }
           }
         }
+      }
+    },
+    Readability: {
+      type: "object",
+      additionalProperties: false,
+      required: ["grade_level", "jargon_density", "estimated_read_minutes"],
+      properties: {
+        grade_level: { type: "string" },
+        jargon_density: { type: "string", enum: ["low", "moderate", "high", "extreme"] },
+        estimated_read_minutes: { type: "integer", minimum: 1 }
       }
     },
     Confidence: { type: "number", minimum: 0, maximum: 1 },
@@ -239,19 +351,40 @@ const buildSchema = () => ({
 const buildPrompt = ({ url, title, text }) => {
   return {
     system: [
-      "You are ClearTerms AI, a real-time legal risk translator.",
-      "Only use the provided policy text. Do not infer or speculate.",
-      "Output MUST be valid JSON that matches the schema.",
-      "All high-risk claims must include verbatim evidence quotes from the policy text.",
-      "If information is missing, write 'Unclear' and leave evidence_quotes empty arrays.",
-      "Include the disclaimers: 'Informational only — not legal advice.' and 'Quotes are verbatim from the policy text provided.'",
-      "Keep The_Gist to at most two sentences."
-    ].join(" "),
+      "You are ClearTerms AI, an expert legal-risk analyst that translates Terms of Service and Privacy Policies into plain English.",
+      "",
+      "ANALYSIS METHODOLOGY:",
+      "1. Read the full policy text carefully.",
+      "2. For each clause type in the schema enum, check whether the policy contains language matching that pattern.",
+      "3. For each match, extract one or more EXACT verbatim quotes from the policy as evidence. Quotes must be copy-paste substrings — do not paraphrase.",
+      "4. Assign a severity (low / medium / high / critical) based on how consumer-hostile the clause is relative to industry norms.",
+      "5. Write a plain_english field: one sentence a non-lawyer would understand.",
+      "6. Write why_it_matters: concrete real-world impact on the user.",
+      "",
+      "DATA PRACTICES: Identify what personal data is collected, who it is shared with, how long it is retained, and what tracking methods are used (cookies, pixels, fingerprinting, etc.).",
+      "",
+      "DATA RIGHTS: Check for access, correction, deletion, portability, and opt-out rights. Mark available=true only if the policy explicitly grants them.",
+      "",
+      "THE ESCAPE: Identify concrete actions a user can take — account deletion, opt-out of data sale, cancellation steps. Rate difficulty.",
+      "",
+      "READABILITY: Estimate the reading grade level (e.g. 'College', 'Graduate'), jargon density, and how many minutes it would take an average reader.",
+      "",
+      "RULES:",
+      "- Output MUST be valid JSON matching the provided schema. No markdown, no code fences, no commentary.",
+      "- Only use the provided policy text. Never infer or speculate. If information is missing, say 'Unclear' or leave arrays empty.",
+      "- Every Red_Flag MUST have at least one evidence_quote that is an exact substring of the policy text.",
+      "- Do NOT include a Red_Flag if you cannot find a verbatim quote to support it.",
+      "- Include disclaimers: 'Informational only — not legal advice.' and 'Evidence quotes are verbatim from the policy text.'",
+      "- The_Gist should be two sentences maximum, written for a non-expert.",
+      "- Prefer fewer, higher-confidence items over exhaustive lists."
+    ].join("\n"),
     user: [
       `URL: ${url}`,
       `Title: ${title}`,
-      "Policy Text:",
-      text
+      "",
+      "--- BEGIN POLICY TEXT ---",
+      text,
+      "--- END POLICY TEXT ---"
     ].join("\n")
   };
 };
@@ -263,8 +396,8 @@ const extractResponseText = (data) => {
 };
 
 const callGemini = async ({ url, title, text }) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
     return { error: "NO_GEMINI_KEY" };
   }
 
@@ -284,7 +417,7 @@ const callGemini = async ({ url, title, text }) => {
     generationConfig: {
       responseMimeType: "application/json",
       responseJsonSchema: schema,
-      temperature: 0.2
+      temperature: 0.15
     }
   };
 
@@ -294,7 +427,7 @@ const callGemini = async ({ url, title, text }) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
+        "x-goog-api-key": geminiKey
       },
       body: JSON.stringify(payload)
     }
@@ -318,7 +451,12 @@ const callGemini = async ({ url, title, text }) => {
     return { error: "PARSE_ERROR", message: "Unable to parse model output." };
   }
 
-  return { analysis: normalizeAnalysis(analysis) };
+  const { score, level, breakdown } = computeRiskScore(analysis.Red_Flags);
+  analysis.Risk_Score = score;
+  analysis.Risk_Level = level;
+  analysis.Risk_Breakdown = breakdown;
+
+  return { analysis };
 };
 
 const hashText = (text) => {
@@ -338,7 +476,7 @@ const analyzeSchema = z.object({
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", version: "2.0.0" });
 });
 
 app.post("/analyze-policy", authenticate, async (req, res) => {
@@ -430,5 +568,5 @@ app.get("/reports/:id", authenticate, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`ClearTerms API running on port ${PORT}`);
+  console.log(`ClearTerms API v2 running on port ${PORT}`);
 });

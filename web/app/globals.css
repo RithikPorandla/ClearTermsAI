@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -7,9 +7,10 @@
 }
 
 body {
-  background: #f7f3ee;
-  color: #101114;
-  font-family: "Optima", "Candara", "Segoe UI", sans-serif;
+  background: #fafafa;
+  color: #0a0a0a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
